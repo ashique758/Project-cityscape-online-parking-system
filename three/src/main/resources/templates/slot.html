@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Slot Booking</title>
+  <style>
+    .available { background-color: white; }
+    .selected { background-color: green; }
+    .booked { background-color: red; }
+  </style>
+</head>
+<body>
+<h2>Available Slots.....</h2>
+<form action="/slots/book" method="post">
+  <table>
+    <tr th:each="slot : ${slots}">
+      <td th:text="${slot.slotName}"></td>
+      <td th:class="${slot.isBooked} ? 'booked' : (${slot.selected} ? 'selected' : 'available')" th:onclick="'toggleSlot(\'' + ${slot.id} + '\')'">
+        <input type="checkbox" th:value="${slot.id}" name="selectedSlots" style="display:none;">
+      </td>
+    </tr>
+  </table>
+  <input type="submit" value="Book Selected Slots">
+</form>
+
+<script th:inline="javascript">
+  function toggleSlot(slotId) {
+    var slotElem = document.querySelector("[th:onclick=\"'toggleSlot(\\'' + " + slotId + " + '\\')'\"]");
+    if (slotElem.classList.contains('available')) {
+      slotElem.classList.remove('available');
+      slotElem.classList.add('selected');
+      slotElem.querySelector('input[type="checkbox"]').checked = true;
+    } else if (slotElem.classList.contains('selected')) {
+      slotElem.classList.remove('selected');
+      slotElem.classList.add('available');
+      slotElem.querySelector('input[type="checkbox"]').checked = false;
+    }
+  }
+</script>
+</body>
+</html>

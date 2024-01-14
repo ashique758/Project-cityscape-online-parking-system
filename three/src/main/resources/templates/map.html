@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <title>CityScape Booking</title>
+  <style>
+
+    /* Other styles as needed */
+  </style>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDnGD1Y27nAeeHVYVBPmCTEdeQBiNtgj7A&libraries=places"></script>
+<!--  ////add google api key here-->
+  <script th:inline="javascript">
+
+    // document.addEventListener('DOMContentLoaded', function() {
+    //   const form = document.getElementById('form');
+    //   const selectedParkingSlotField = document.getElementById('selectedParkingSlotField');
+    //   const selectedParkingSlotPlaceId = document.getElementById('selectedParkingSlotPlaceId');
+    //
+    //   form.addEventListener('submit', function(e) {
+    //     e.preventDefault();
+    //     const selectedParkingSlotFieldValue = selectedParkingSlotField.value;
+    //     const selectedParkingSlotPlaceIdValue = selectedParkingSlotPlaceId.value;
+    //     localStorage.setItem('selectedParkingSlotFieldValueKey', selectedParkingSlotFieldValue);
+    //     localStorage.setItem('selectedParkingSlotPlaceIdValueKey', selectedParkingSlotPlaceIdValue);
+    //
+    //     window.location.href="payment.html";
+    //   });
+    //
+    //   // Your other code related to retrieving and displaying data in the payment page can follow here.
+    // });
+
+
+    //////////////////////////////////////
+
+    let map;
+    let geocoder;
+    let placesService;
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: {lat: -34.397, lng: 150.644},
+        zoom: 8
+      });
+
+      geocoder = new google.maps.Geocoder();
+      placesService = new google.maps.places.PlacesService(map);
+
+      map.addListener('click', function(event) {
+        geocodeLatLng(event.latLng);
+      });
+
+      document.getElementById('searchButton').addEventListener('click', function() {
+        const address = document.getElementById('address').value;
+        geocodeAddress(address);
+      });
+    }
+
+    function geocodeLatLng(latLng) {
+      geocoder.geocode({
+        'location': latLng
+      }, function(results, status) {
+        if (status === 'OK') {
+          if (results[0]) {
+            document.getElementById('address').value = results[0].formatted_address;
+            findNearbyParkingLots(results[0].geometry.location);
+          } else {
+            window.alert('No results found');
+          }
+        } else {
+          window.alert('Geocoder failed due to: ' + status + "Enter a Valid Address or No parking lots found! ");
+        }
+      });
+    }
+
+    function geocodeAddress(address) {
+      geocoder.geocode({
+        'address': address
+      }, function(results, status) {
+        if (status === 'OK') {
+          if (results[0]) {
+            map.setCenter(results[0].geometry.location);
+            new google.maps.Marker({
+              map: map,
+              position: results[0].geometry.location
+            });
+            findNearbyParkingLots(results[0].geometry.location);
+          } else {
+            window.alert('No results found');
+          }
+        } else {
+          window.alert('Geocoder failed due to: ' + status);
+        }
+      });
+    }
+
+    function findNearbyParkingLots(location) { // search for parking lots specifcially
+      console.log("method to search for parking lots specifcially ")
+      const request = {
+        location: location,
+        radius: '500',
+        type: ['parking']
+      };
+
+      placesService.nearbySearch(request, function(results, status) {
+        if (status === 'OK') {
+          displayParkingLots(results);
+        } else {
+          window.alert('Places service failed due to: ' + status);
+        }
+      });
+    }
+
+    function displayParkingLots(parkingLots) { //to display parking lots of the entered area
+      console.log("method to display parking lots of the entered area ")
+      const parkingLotsContainer = document.getElementById('parkingLots');
+
+      parkingLotsContainer.innerHTML = '';
+
+      if (parkingLots && parkingLots.length > 0) {
+        const list = document.createElement('ul');
+        parkingLots.forEach((parkingLot, index) => {
+          const listItem = document.createElement('li');
+          const button = document.createElement('button');
+          button.textContent = parkingLot.name;
+          button.addEventListener('click', function() {
+            displaySelectedParkingLot(parkingLot);
+          });
+          listItem.appendChild(button);
+          list.appendChild(listItem);
+        });
+        parkingLotsContainer.appendChild(list);
+      } else {
+        parkingLotsContainer.textContent = 'No parking lots found nearby.';
+      }
+    }
+
+    // function displaySelectedParkingLot(parkingLot) {
+    //   console.log("method 3 ")
+    //   const selectedParkingLotContainer = document.getElementById('selectedParkingLot');
+    //   selectedParkingLotContainer.innerHTML = '';
+    //
+    //   const selectedParkingLotInfo = document.createElement('div');
+    //   selectedParkingLotInfo.textContent = 'Selected Parking Lot: ' + parkingLot.name;
+    //   console.log(parkingLot.name)// not printing
+    //   selectedParkingLotContainer.appendChild(selectedParkingLotInfo);
+    // }
+
+
+    function displaySelectedParkingLot(parkingLot) { //display selected parking lots
+      console.log("method to  display selected parking lots")
+      console.log('Google map place name:',parkingLot.name)
+      console.log('Google map placeId:', parkingLot.place_id)
+      const selectedParkingLotContainer = document.getElementById('selectedParkingLot');
+      selectedParkingLotContainer.innerHTML = '';
+
+      const selectedParkingLotInfo = document.createElement('div');
+      selectedParkingLotInfo.textContent = 'Selected Parking Lot: ' + parkingLot.name;
+      selectedParkingLotContainer.appendChild(selectedParkingLotInfo);
+
+      // Populate the selected parking slot in the input field
+      const selectedParkingSlotField = document.getElementById('selectedParkingSlotField');
+      selectedParkingSlotField.value = parkingLot.name; // Set the name of the parking slot
+
+      const selectedParkingSlotPlaceId = document.getElementById('selectedParkingSlotPlaceId');
+      selectedParkingSlotPlaceId.value = parkingLot.place_id; // Set the place id  of the parking slot
+    }
+
+    //
+
+
+
+    //
+    // const form = document.getElementById('form');
+    // const selectedParkingSlotField = document.getElementById('selectedParkingSlotField')
+    // const selectedParkingSlotPlaceId=document.getElementById('selectedParkingSlotPlaceId')
+    //
+    // form.addEventListener('submit',function (e){
+    //     e.preventDefault();
+    //     const selectedParkingSlotFieldValue=selectedParkingSlotField.value;
+    //     const selectedParkingSlotPlaceIdValue=selectedParkingSlotPlaceId.value;
+    //     localStorage.setItem('selectedParkingSlotFieldValueKey',selectedParkingSlotFieldValue);
+    //     localStorage.setItem('selectedParkingSlotPlaceIdValueKey',selectedParkingSlotPlaceIdValue);
+    //
+    //     // window.location.href="payment.html";
+    // })
+    /////new below
+    // const form = document.getElementById('form');
+    // const selectedParkingSlotField = document.getElementById('selectedParkingSlotField');
+    // const selectedParkingSlotPlaceId = document.getElementById('selectedParkingSlotPlaceId');
+
+    // form.addEventListener('submit', function(e) {
+    //   e.preventDefault();
+    //   const selectedParkingSlotFieldValue = selectedParkingSlotField.value;
+    //   const selectedParkingSlotPlaceIdValue = selectedParkingSlotPlaceId.value;
+    //   localStorage.setItem('selectedParkingSlotFieldValueKey', selectedParkingSlotFieldValue);
+    //   localStorage.setItem('selectedParkingSlotPlaceIdValueKey', selectedParkingSlotPlaceIdValue);
+    //
+    //   form.submit;
+    //  // window.location.href="payment.html";
+    // });
+
+    // form.addEventListener('submit', function(e) {
+    //   e.preventDefault();
+    //   const selectedParkingSlotFieldValue = selectedParkingSlotField.value;
+    //   const selectedParkingSlotPlaceIdValue = selectedParkingSlotPlaceId.value;
+    //   localStorage.setItem('selectedParkingSlotFieldValueKey', selectedParkingSlotFieldValue);
+    //   localStorage.setItem('selectedParkingSlotPlaceIdValueKey', selectedParkingSlotPlaceIdValue);
+    //
+    //   // Delay the redirect by a short period to ensure localStorage is set before redirection
+    //   setTimeout(function() {
+    //     window.location.href = "/payment.html"; // Replace "/payment" with your actual payment page URL
+    //   }, 100); // Adjust the delay time as needed
+    // });
+
+
+    // Other code related to retrieving and displaying data in the payment page can follow here.
+
+  </script>
+</head>
+<body style="background-color: #212529; color: white;" onload="initMap()">
+
+
+<!--///////////////////////////NAV BAR/////////////////////////////////////////////////-->
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" th:href="@{/home}">CityScape</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+      <li class="nav-item active">
+        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item active">
+        <a class="nav-link" href="#">About <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item active">
+        <a class="nav-link" href="#">Contact Us <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          My Account
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+          <a class="dropdown-item" href="#">Edit Profile</a>
+          <a class="dropdown-item" href="#">My Bookings</a>
+          <a th:if="${isLoggedIn}"  th:href="@{/logout}"  class="dropdown-item"> Logout </a>
+
+        </div>
+      </li>
+    </ul>
+    <form class="form-inline my-2 my-lg-0">
+      <input class="form-control mr-sm-2" type="search" placeholder="Search">
+      <button class="btn btn-outline-warning my-2 my-sm-0" type="submit">Search</button>
+    </form>
+  </div>
+</nav>
+
+<br>
+
+<h4 align="center" class="text-warning">Book Now</h4>
+<br>
+
+<!--///////////////////////////////////nav bar ends/////////////////////////////////////////-->
+
+<div class="container">
+  <div class="row">
+    <div class="col">
+
+      <div class="form-section-left">
+        <div id="map" style="height: 300px;"></div>
+        <br>
+        <div class="search-container">
+          <label for="address">Enter an address to search for Parking lots: </label>
+          <input type="text" id="address" th:value="${address}">
+          <button id="searchButton" type="button" class="btn btn-warning">Search</button>
+        </div>
+        <br>
+        <label for="parkingLots">List of Parking lots available in the area : </label>
+        <div id="parkingLots"></div>
+        <div id="selectedParkingLot"></div>
+      </div>
+
+    </div>
+    <div class="col">
+
+      <div class="container" >
+        <!-- Add this input field within your form -->
+        <!--<input type="text" id="selectedParkingSlotField">-->
+        <div class="form-section-right" style="width: 100%;">
+          <!--<form th:action="@{/login}" th:object ="${user}" method="POST">-->
+
+
+<!--          //////////////////////////////////////////-->
+
+
+<!--          <form th:action="@{/book}" th:object ="${booking}" method="post">-->
+
+<!--              <label for="selectedParkingSlotField">Parking Lot Address:</label>-->
+<!--              <input type="text" id="selectedParkingSlotField" th:field="*{parkinglotaddress}">-->
+
+<!--              <br>-->
+<!--              <label for="selectedParkingSlotPlaceId">Parking Lot Place ID:</label>-->
+<!--              <input type="text" id="selectedParkingSlotPlaceId" th:field="*{parkingslotplaceid}">-->
+
+<!--              <br>-->
+<!--              <label for="lotNumber">Parking Slot Number:</label>-->
+<!--              <input type="text" id="lotNumber" th:field="*{parkingslotnumber}" name="lotNumber"><br><br>-->
+
+<!--              <label for="vehicleNumber">Vehicle Number:</label>-->
+<!--              <input type="text" id="vehicleNumber" th:field="*{vehiclenumber}" name="vehicleNumber"><br><br>-->
+
+<!--              <label for="checkinDate">Check-in Date:</label>-->
+<!--              <input type="date" id="checkinDate" th:field="*{checkindate}" name="checkinDate"><br><br>-->
+
+<!--              <label for="checkoutDate">Check-out Date:</label>-->
+<!--              <input type="date" id="checkoutDate" th:field="*{checkoutdate}" name="checkoutDate"><br><br>-->
+
+<!--              <label for="checkinTime">Check-in Time:</label>-->
+<!--              <input type="time" id="checkinTime" th:field="*{checkintime}" name="checkinTime"><br><br>-->
+
+<!--              <label for="checkoutTime">Check-out Time:</label>-->
+<!--              <input type="time" id="checkoutTime" th:field="*{checkouttime}" name="checkoutTime"><br><br>-->
+
+<!--            &lt;!&ndash; Add this button in the map.html &ndash;&gt;-->
+<!--&lt;!&ndash;            <button id="proceedToPayment" class="btn btn-warning" onclick="proceedToPayment()">Proceed to Payment</button>&ndash;&gt;-->
+
+<!--            <input type="submit" class="btn btn-warning" value="Submit">-->
+<!--            </form>-->
+
+<!--   pass trial form         -->
+<!--            <form id="form" >-->
+<!--                <label for="selectedParkingSlotField">Parking Lot Address:</label>-->
+<!--                <input type="text" id="selectedParkingSlotField" >-->
+
+<!--                <br>-->
+<!--                <label for="selectedParkingSlotPlaceId">Parking Lot Place ID:</label>-->
+<!--                <input type="text" id="selectedParkingSlotPlaceId" >-->
+
+<!--                &lt;!&ndash; Add other fields as needed &ndash;&gt;-->
+
+<!--&lt;!&ndash;                <input type="submit"  th:href="@{/payment}" class="btn btn-warning" value="Submit">&ndash;&gt;-->
+<!--              <a th:href="@{/payment}" type="submit"  class ="btn btn-warning">Submit</a>-->
+
+<!--            </form>-->
+<!--            -->
+
+          <form id="form">
+
+            <label for="selectedParkingSlotPlaceId">Parking Lot ID:</label>
+            <input type="text" id="selectedParkingSlotPlaceId" disabled>
+            <br>
+            <label for="selectedParkingSlotField">Parking Lot Address:</label>
+            <input type="text" id="selectedParkingSlotField" disabled>
+            <br>
+
+
+<!--            <label for="lotNumber">Parking Slot Number:</label>-->
+<!--            <input type="text" id="lotNumber"  name="lotNumber"><br><br>-->
+
+            <label for="lotNumber">Parking Slot Number:</label>
+            <select id="lotNumber" name="lotNumber" class="btn btn-secondary dropdown-toggle">
+              <option value="1">Slot 1</option>
+              <option value="2">Slot 2</option>
+              <option value="3">Slot 3</option>
+              <!-- Add more options for other slots -->
+            </select><br><br>
+
+
+            <label for="vehicleNumber">Vehicle Number:</label>
+            <input type="text" id="vehicleNumber" name="vehicleNumber"><br><br>
+
+            <label for="checkinDate">Check-in Date:</label>
+            <input type="date" id="checkinDate"  name="checkinDate"><br><br>
+
+            <label for="checkoutDate">Check-out Date:</label>
+            <input type="date" id="checkoutDate" name="checkoutDate"><br><br>
+
+            <label for="checkinTime">Check-in Time:</label>
+            <input type="time" id="checkinTime"  name="checkinTime"><br><br>
+
+            <label for="checkoutTime">Check-out Time:</label>
+            <input type="time" id="checkoutTime"  name="checkoutTime"><br><br>
+
+            <a th:href="@{/payment}" class="btn btn-warning" onclick="submitForm()">Proceed to Pay</a>
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<br>
+<br>
+<script>
+  function submitForm() {
+
+
+
+    const selectedParkingSlotField = document.getElementById('selectedParkingSlotField').value;
+    const selectedParkingSlotPlaceId = document.getElementById('selectedParkingSlotPlaceId').value;
+    const lotNumber = document.getElementById('lotNumber').value;
+    const vehicleNumber = document.getElementById('vehicleNumber').value;
+
+    const checkinDate = document.getElementById('checkinDate').value;
+    const checkoutDate = document.getElementById('checkoutDate').value;
+    const checkinTime = document.getElementById('checkinTime').value;
+    const checkoutTime = document.getElementById('checkoutTime').value;
+
+
+
+    localStorage.setItem('selectedParkingSlotFieldValueKey', selectedParkingSlotField);
+    localStorage.setItem('selectedParkingSlotPlaceIdValueKey', selectedParkingSlotPlaceId);
+    localStorage.setItem('lotNumberKey', lotNumber);
+    localStorage.setItem('vehicleNumberKey', vehicleNumber);
+
+    localStorage.setItem('checkinDateKey', checkinDate);
+    localStorage.setItem('checkoutDateKey', checkoutDate);
+    localStorage.setItem('checkinTimeKey', checkinTime);
+    localStorage.setItem('checkoutTimeKey', checkoutTime);
+
+
+
+    // Redirect to payment.html after setting local storage values
+    window.location.href = "/payment.html";
+  }
+</script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeLeaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <!-- Add this script tag before your JavaScript code -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+    <title>CityScape Show Users</title>
+
+
+        <script>
+            function handleClickconfirmparking(buttonId) {
+            // Disable the button
+            var button = document.getElementById(buttonId);
+            button.setAttribute('disabled', true);
+            button.classList.add('disabled'); // Optionally, add a visual cue by changing the button style
+        }
+
+            function handleClickconfirmleaving(buttonId) {
+            // Disable the button
+            var button = document.getElementById(buttonId);
+            button.setAttribute('disabled', true);
+            button.classList.add('disabled'); // Optionally, add a visual cue by changing the button style
+        }
+
+
+
+            function handleClickcancelparking(buttonId) {
+                var bookingId = buttonId.split('_')[1]; // Get the actual ID part from the button ID
+
+                // Disable the button
+                var button = document.getElementById(buttonId);
+                button.setAttribute('disabled', true);
+                button.classList.add('disabled'); // Optionally, add a visual cue by changing the button style
+
+                // Perform an AJAX request to delete the booking by ID
+                $.ajax({
+                    type: "DELETE",
+                    url: "/bookings/" + bookingId,
+                    success: function (response) {
+                        // Handle success response (e.g., show a message, reload the page)
+                        alert("Booking canceled successfully");
+                        location.reload(); // Reload the page
+                    },
+                    error: function (error) {
+                        // Handle error response (e.g., show an error message)
+                        console.error("Error canceling booking: ", error);
+                    }
+                });
+            }
+
+        </script>
+
+
+
+</head>
+<body style="background-color: #212529; color: white;">
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" th:href="@{/home}">CityScape</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+            <li class="nav-item active">
+                <a class="nav-link" th:href="@{/home}">Home <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" th:href="@{/about}">About <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" th:href="@{/contactus}">Contact Us <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item dropdown">
+                <a th:if="${isLoggedIn}" class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    My Account
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a th:if="${isLoggedIn}"   class="dropdown-item" href="#">Edit Profile</a>
+                    <a th:if="${isLoggedIn}"   class="dropdown-item" href="#">My Bookings</a>
+                    <a th:if="${isLoggedIn}"  th:href="@{/logout}"  class="dropdown-item"> Logout </a>
+
+                </div>
+            </li>
+            <li class="nav-item active">
+                <a th:if="${isAdmin}" class="dropdown-item" th:href="@{/adminpanel}">User Management</a>
+            </li>
+
+        </ul>
+        <form class="form-inline my-2 my-lg-0">
+            <input class="form-control mr-sm-2" type="search" placeholder="Search">
+            <button class="btn btn-outline-warning my-2 my-sm-0" type="submit">Search</button>
+        </form>
+    </div>
+</nav>
+
+<br>
+
+
+<div class="text-center">
+<h1>My Bookings</h1>
+</div>
+
+<table class="table table-dark table-striped">
+    <thead>
+    <tr>
+        <th>Booking ID</th>
+        <th>User Email</th>
+        <th>Parking lot ID</th>
+        <th>Parking Lot Address</th>
+        <th>Parking Slot Number</th>
+
+        <th>Vehicle Number</th>
+        <th>Check-in Date</th>
+        <th>Check-out Date</th>
+        <th>Check-in Time</th>
+        <th>Check-out Time</th>
+        <th>Confirm Parking </th>
+        <th>Confirm Leaving</th>
+        <th>Cancel Booking</th>
+
+        <!-- Add headers for other booking attributes -->
+    </tr>
+    </thead>
+    <tbody>
+    <!-- Iterate through bookings and display attributes in each row -->
+    <tr th:each="booking : ${bookings}">
+        <td th:text="${booking.bookingid}"></td>
+        <td th:text="${booking.userEmail}"></td>
+        <td th:text="${booking.parkingslotplaceid}"></td>
+        <td th:text="${booking.parkinglotaddress}"></td>
+        <td th:text="${booking.parkingslotnumber}"></td>
+
+        <td th:text="${booking.vehiclenumber}"></td>
+        <td th:text="${booking.checkindate}"></td>
+        <td th:text="${booking.checkoutdate}"></td>
+        <td th:text="${booking.checkintime}"></td>
+        <td th:text="${booking.checkouttime}"></td>
+        <!-- Inside the <tbody> tag, modify the buttons like this -->
+        <td>
+            <a href="#" class="btn btn-primary" id="clickButtonconfirmparking_${booking.bookingid}" onclick="handleClickconfirmparking(this.id)">Confirm Parking</a>
+        </td>
+        <td>
+            <a href="#" class="btn btn-success" id="clickButtonconfirmleaving_${booking.bookingid}" onclick="handleClickconfirmleaving(this.id)">Confirm Leaving</a>
+        </td>
+        <td>
+<!--            <a th:href="@{/{bookingid} (id=${booking.bookingid}) }" class="btn btn-danger" id="clickButtoncancelparking_${booking.bookingid}" onclick="handleClickcancelparking(this.id)">Cancel Parking</a>-->
+            <a th:href="@{/booking/{bookingid}(bookingid=${booking.bookingid})}" class="btn btn-danger">Cancel Parking</a>
+
+
+        </td>
+        <!-- Add cells for other booking attributes -->
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
